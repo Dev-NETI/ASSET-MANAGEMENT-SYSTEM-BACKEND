@@ -14,9 +14,7 @@ class DepartmentController extends Controller
 
     public function index(): JsonResponse
     {
-        $departments = Department::withCount(['employees', 'itemAssets', 'inventoryStocks'])
-            ->orderBy('name')
-            ->get();
+        $departments = Department::orderBy('name')->get();
 
         return $this->success($departments);
     }
@@ -24,10 +22,9 @@ class DepartmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'name'      => 'required|string|max:255',
-            'code'      => 'required|string|max:20|unique:departments,code',
+            'name'        => 'required|string|max:255',
+            'code'        => 'required|string|max:20|unique:departments,code',
             'description' => 'nullable|string',
-            'head_name' => 'nullable|string|max:255',
         ]);
 
         $department = Department::create($validated);
@@ -53,7 +50,6 @@ class DepartmentController extends Controller
             'name'        => 'sometimes|string|max:255',
             'code'        => 'sometimes|string|max:20|unique:departments,code,' . $department->id,
             'description' => 'nullable|string',
-            'head_name'   => 'nullable|string|max:255',
         ]);
 
         $department->update($validated);

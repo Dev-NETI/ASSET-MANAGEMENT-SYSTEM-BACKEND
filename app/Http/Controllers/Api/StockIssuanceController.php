@@ -21,6 +21,7 @@ class StockIssuanceController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user  = $request->user();
         $query = StockIssuance::with([
             'item.unit',
             'fromDepartment',
@@ -28,7 +29,9 @@ class StockIssuanceController extends Controller
             'issuedBy',
         ]);
 
-        if ($request->filled('from_department_id')) {
+        if (! $user->isSystemAdmin()) {
+            $query->where('from_department_id', $user->department_id);
+        } elseif ($request->filled('from_department_id')) {
             $query->where('from_department_id', $request->from_department_id);
         }
 
@@ -64,9 +67,11 @@ class StockIssuanceController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
             'item_id'            => 'required|exists:items,id',
-            'from_department_id' => 'required|exists:departments,id',
+            'from_department_id' => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
             'issuable_type'      => 'required|in:employee,department',
             'issuable_id'        => 'required|integer',
             'quantity'           => 'required|numeric|min:0.01',
@@ -74,6 +79,10 @@ class StockIssuanceController extends Controller
             'purpose'            => 'nullable|string|max:500',
             'notes'              => 'nullable|string',
         ]);
+
+        if (! $user->isSystemAdmin()) {
+            $validated['from_department_id'] = $user->department_id;
+        }
 
         $item = Item::findOrFail($validated['item_id']);
         if ($item->isFixedAsset()) {

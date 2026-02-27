@@ -21,9 +21,12 @@ class StockReceivalController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user  = $request->user();
         $query = StockReceival::with(['item.unit', 'department', 'supplier', 'receivedBy']);
 
-        if ($request->filled('department_id')) {
+        if (! $user->isSystemAdmin()) {
+            $query->where('department_id', $user->department_id);
+        } elseif ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
         }
 
@@ -53,9 +56,11 @@ class StockReceivalController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
             'item_id'       => 'required|exists:items,id',
-            'department_id' => 'required|exists:departments,id',
+            'department_id' => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
             'quantity'      => 'required|numeric|min:0.01',
             'unit_cost'     => 'nullable|numeric|min:0',
             'supplier_id'   => 'nullable|exists:suppliers,id',
@@ -63,6 +68,10 @@ class StockReceivalController extends Controller
             'received_at'   => 'nullable|date',
             'notes'         => 'nullable|string',
         ]);
+
+        if (! $user->isSystemAdmin()) {
+            $validated['department_id'] = $user->department_id;
+        }
 
         $item = Item::findOrFail($validated['item_id']);
         if ($item->isFixedAsset()) {

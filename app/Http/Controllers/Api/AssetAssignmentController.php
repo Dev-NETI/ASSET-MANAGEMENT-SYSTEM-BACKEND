@@ -18,6 +18,7 @@ class AssetAssignmentController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        $user  = $request->user();
         $query = AssetAssignment::with([
             'asset.item',
             'asset.department',
@@ -25,6 +26,14 @@ class AssetAssignmentController extends Controller
             'assignedBy',
             'returnedBy',
         ]);
+
+        if (! $user->isSystemAdmin()) {
+            $query->whereHas('asset', fn ($q) => $q->where('department_id', $user->department_id));
+        } else {
+            if ($request->filled('department_id')) {
+                $query->whereHas('asset', fn ($q) => $q->where('department_id', $request->department_id));
+            }
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -42,10 +51,6 @@ class AssetAssignmentController extends Controller
 
         if ($request->filled('assignable_id')) {
             $query->where('assignable_id', $request->assignable_id);
-        }
-
-        if ($request->filled('department_id')) {
-            $query->whereHas('asset', fn ($q) => $q->where('department_id', $request->department_id));
         }
 
         return $this->success(

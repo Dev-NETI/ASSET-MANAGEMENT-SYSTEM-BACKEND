@@ -9,12 +9,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Employee extends Model
 {
     protected $fillable = [
-        'employee_id',
         'first_name',
         'last_name',
         'department_id',
         'position',
-        'email',
         'phone',
         'status',
     ];

@@ -11,19 +11,31 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::firstOrCreate(
-            ['email' => 'admin@inventory.com'],
+            ['email' => 'sherwin.roxas@neti.com.ph'],
             [
-                'name'     => 'System Admin',
-                'password' => Hash::make('password'),
+                'name'      => 'System Admin',
+                'password'  => Hash::make('password'),
+                'user_type' => 'system_administrator',
             ]
         );
 
+        User::updateOrCreate(
+            ['email' => 'sherwin.roxas@neti.com.ph'],
+            ['user_type' => 'system_administrator']
+        );
+
         User::firstOrCreate(
-            ['email' => 'storekeeper@inventory.com'],
+            ['email' => 'storekeeper@neti.com.ph'],
             [
-                'name'     => 'Store Keeper',
-                'password' => Hash::make('password'),
+                'name'      => 'Store Keeper',
+                'password'  => Hash::make('password'),
+                'user_type' => 'system_administrator',
             ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'storekeeper@neti.com.ph'],
+            ['user_type' => 'system_administrator']
         );
     }
 }
