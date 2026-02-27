@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasModifiedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class StockIssuance extends Model
 {
+    use HasModifiedBy;
     protected $fillable = [
         'item_id',
         'from_department_id',
@@ -18,6 +20,7 @@ class StockIssuance extends Model
         'issued_at',
         'purpose',
         'notes',
+        'issued_to_other',
     ];
 
     protected $casts = [

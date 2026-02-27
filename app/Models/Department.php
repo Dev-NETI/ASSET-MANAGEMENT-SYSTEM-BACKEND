@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasModifiedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Department extends Model
 {
+    use HasModifiedBy;
     protected $fillable = [
         'name',
         'code',

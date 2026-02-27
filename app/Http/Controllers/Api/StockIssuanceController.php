@@ -50,7 +50,7 @@ class StockIssuanceController extends Controller
         }
 
         return $this->success(
-            $query->orderByDesc('issued_at')->get()
+            $query->orderByDesc('created_at')->get()
         );
     }
 
@@ -72,12 +72,13 @@ class StockIssuanceController extends Controller
         $validated = $request->validate([
             'item_id'            => 'required|exists:items,id',
             'from_department_id' => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
-            'issuable_type'      => 'required|in:employee,department',
-            'issuable_id'        => 'required|integer',
+            'issuable_type'      => 'required|in:employee,department,others',
+            'issuable_id'        => 'required_unless:issuable_type,others|nullable|integer',
             'quantity'           => 'required|numeric|min:0.01',
             'issued_at'          => 'nullable|date',
             'purpose'            => 'nullable|string|max:500',
             'notes'              => 'nullable|string',
+            'issued_to_other'    => 'required_if:issuable_type,others|nullable|string|max:500',
         ]);
 
         if (! $user->isSystemAdmin()) {
@@ -89,14 +90,19 @@ class StockIssuanceController extends Controller
             return $this->error('Fixed assets are assigned individually, not issued as stock.', 422);
         }
 
-        // Resolve the polymorphic model
-        $modelMap = [
-            'employee'   => \App\Models\Employee::class,
-            'department' => \App\Models\Department::class,
-        ];
-        $modelClass = $modelMap[$validated['issuable_type']];
-        if (! $modelClass::find($validated['issuable_id'])) {
-            return $this->error(ucfirst($validated['issuable_type']) . ' not found.', 422);
+        // Resolve the polymorphic model (skip for 'others')
+        $modelClass   = null;
+        $issuableId   = null;
+        if ($validated['issuable_type'] !== 'others') {
+            $modelMap = [
+                'employee'   => \App\Models\Employee::class,
+                'department' => \App\Models\Department::class,
+            ];
+            $modelClass = $modelMap[$validated['issuable_type']];
+            $issuableId = $validated['issuable_id'];
+            if (! $modelClass::find($issuableId)) {
+                return $this->error(ucfirst($validated['issuable_type']) . ' not found.', 422);
+            }
         }
 
         // Check sufficient stock
@@ -109,19 +115,20 @@ class StockIssuanceController extends Controller
             return $this->error("Insufficient stock. Available: {$available}", 422);
         }
 
-        $issuance = DB::transaction(function () use ($validated, $modelClass, $stock, $request) {
+        $issuance = DB::transaction(function () use ($validated, $modelClass, $issuableId, $stock, $request) {
             $stock->decrement('quantity', $validated['quantity']);
 
             return StockIssuance::create([
                 'item_id'            => $validated['item_id'],
                 'from_department_id' => $validated['from_department_id'],
                 'issuable_type'      => $modelClass,
-                'issuable_id'        => $validated['issuable_id'],
+                'issuable_id'        => $issuableId,
                 'quantity'           => $validated['quantity'],
                 'issued_by'          => $request->user()->id,
                 'issued_at'          => $validated['issued_at'] ?? now(),
                 'purpose'            => $validated['purpose'] ?? null,
                 'notes'              => $validated['notes'] ?? null,
+                'issued_to_other'    => $validated['issued_to_other'] ?? null,
             ]);
         });
 
