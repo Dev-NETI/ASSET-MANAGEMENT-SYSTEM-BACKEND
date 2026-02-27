@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
 use App\Http\Controllers\Api\AssetAssignmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
@@ -12,12 +13,15 @@ use App\Http\Controllers\Api\StockIssuanceController;
 use App\Http\Controllers\Api\StockReceivalController;
 use App\Http\Controllers\Api\SupplierController;
 use App\Http\Controllers\Api\UnitController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ── Public routes ────────────────────────────────────────────────────────────
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/register',            [AuthController::class, 'register']);
+Route::post('/login',               [AuthController::class, 'login']);
+Route::post('/verify-code',         [AuthController::class, 'verifyCode']);
+Route::post('/resend-verification', [AuthController::class, 'resendCode']);
 
 // ── Protected routes (Sanctum token required) ────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -25,6 +29,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::get('/user',      fn(Request $request) => $request->user());
     Route::post('/logout',   [AuthController::class, 'logout']);
+
+    // Account settings (authenticated user's own profile)
+    Route::put('/account', [AccountController::class, 'update']);
 
     // ── Reference / lookup resources ─────────────────────────────────────────
     Route::apiResource('departments', DepartmentController::class);
@@ -36,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('items', ItemController::class);
 
     // ── People ────────────────────────────────────────────────────────────────
+    Route::apiResource('users',     UserController::class);
     Route::apiResource('employees', EmployeeController::class);
 
     // ── Fixed-asset management ────────────────────────────────────────────────

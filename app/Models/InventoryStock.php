@@ -17,6 +17,8 @@ class InventoryStock extends Model
         'quantity' => 'decimal:2',
     ];
 
+    protected $appends = ['is_below_minimum'];
+
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
@@ -27,8 +29,14 @@ class InventoryStock extends Model
         return $this->belongsTo(Department::class);
     }
 
+    public function getIsBelowMinimumAttribute(): bool
+    {
+        return $this->item && $this->item->min_stock_level > 0
+            && $this->quantity < $this->item->min_stock_level;
+    }
+
     public function isBelowMinimum(): bool
     {
-        return $this->quantity < $this->item->min_stock_level;
+        return $this->getIsBelowMinimumAttribute();
     }
 }

@@ -16,9 +16,12 @@ class ItemAssetController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $user  = $request->user();
         $query = ItemAsset::with(['item.category', 'department', 'activeAssignment.assignable']);
 
-        if ($request->filled('department_id')) {
+        if (! $user->isSystemAdmin()) {
+            $query->where('department_id', $user->department_id);
+        } elseif ($request->filled('department_id')) {
             $query->where('department_id', $request->department_id);
         }
 
@@ -46,18 +49,25 @@ class ItemAssetController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
-            'item_id'        => 'required|exists:items,id',
-            'item_code'      => 'required|string|max:100|unique:item_assets,item_code',
-            'serial_number'  => 'nullable|string|max:255',
-            'purchase_date'  => 'nullable|date',
-            'purchase_price' => 'nullable|numeric|min:0',
+            'item_id'         => 'required|exists:items,id',
+            'item_code'       => 'required|string|max:100|unique:item_assets,item_code',
+            'serial_number'   => 'nullable|string|max:255',
+            'purchase_date'   => 'nullable|date',
+            'purchase_price'  => 'nullable|numeric|min:0',
             'warranty_expiry' => 'nullable|date|after_or_equal:purchase_date',
-            'condition'      => 'nullable|in:new,good,fair,poor,damaged,lost,disposed',
-            'department_id'  => 'required|exists:departments,id',
-            'status'         => 'nullable|in:available,assigned,under_repair,disposed',
-            'notes'          => 'nullable|string',
+            'condition'       => 'nullable|in:new,good,fair,poor,damaged,lost,disposed',
+            'department_id'   => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
+            'status'          => 'nullable|in:available,assigned,under_repair,disposed',
+            'notes'           => 'nullable|string',
         ]);
+
+        // Employee users are scoped to their own department
+        if (! $user->isSystemAdmin()) {
+            $validated['department_id'] = $user->department_id;
+        }
 
         // Ensure item is a fixed_asset type
         $item = \App\Models\Item::findOrFail($validated['item_id']);

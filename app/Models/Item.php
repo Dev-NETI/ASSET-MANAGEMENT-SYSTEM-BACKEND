@@ -18,12 +18,18 @@ class Item extends Model
         'model',
         'specifications',
         'min_stock_level',
+        'department_id',
     ];
 
     protected $casts = [
         'specifications' => 'array',
         'min_stock_level' => 'decimal:2',
     ];
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
 
     public function category(): BelongsTo
     {

@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -22,6 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'user_type',
+        'department_id',
+        'permissions',
     ];
 
     /**
@@ -43,7 +47,24 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
+            'permissions'       => 'array',
         ];
+    }
+
+    public function isSystemAdmin(): bool
+    {
+        return $this->user_type === 'system_administrator';
+    }
+
+    public function hasPermission(string $key): bool
+    {
+        if ($this->isSystemAdmin()) return true;
+        return in_array($key, $this->permissions ?? []);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 }

@@ -14,7 +14,12 @@ class ItemController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $user  = $request->user();
         $query = Item::with(['category', 'unit']);
+
+        if (! $user->isSystemAdmin()) {
+            $query->where('department_id', $user->department_id);
+        }
 
         if ($request->filled('item_type')) {
             $query->where('item_type', $request->item_type);
@@ -34,9 +39,9 @@ class ItemController extends Controller
 
         $items = $query->orderBy('name')->get()->map(function ($item) {
             if ($item->isFixedAsset()) {
-                $item->total_units    = $item->assets()->count();
+                $item->total_units     = $item->assets()->count();
                 $item->available_units = $item->assets()->where('status', 'available')->count();
-                $item->assigned_units = $item->assets()->where('status', 'assigned')->count();
+                $item->assigned_units  = $item->assets()->where('status', 'assigned')->count();
             } else {
                 $item->total_stock = $item->inventoryStocks()->sum('quantity');
             }
@@ -49,6 +54,8 @@ class ItemController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'description'     => 'nullable|string',
@@ -59,7 +66,12 @@ class ItemController extends Controller
             'model'           => 'nullable|string|max:255',
             'specifications'  => 'nullable|array',
             'min_stock_level' => 'nullable|numeric|min:0',
+            'department_id'   => 'nullable|exists:departments,id',
         ]);
+
+        $validated['department_id'] = $user->isSystemAdmin()
+            ? ($validated['department_id'] ?? null)
+            : $user->department_id;
 
         $item = Item::create($validated);
         $item->load(['category', 'unit']);

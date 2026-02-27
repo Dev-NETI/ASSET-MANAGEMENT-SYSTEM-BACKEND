@@ -7,39 +7,51 @@ use App\Models\Category;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
     use ApiResponse;
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $categories = Category::with('parent')
-            ->withCount('items')
-            ->orderBy('name')
-            ->get();
+        $user  = $request->user();
+        $query = Category::orderBy('name');
 
-        return $this->success($categories);
+        if (! $user->isSystemAdmin()) {
+            $query->where('department_id', $user->department_id);
+        }
+
+        return $this->success($query->get());
     }
 
     public function store(Request $request): JsonResponse
     {
+        $user   = $request->user();
+        $deptId = $user->isSystemAdmin()
+            ? ($request->input('department_id') ?: null)
+            : $user->department_id;
+
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'code'        => 'nullable|string|max:20|unique:categories,code',
-            'description' => 'nullable|string',
-            'parent_id'   => 'nullable|exists:categories,id',
+            'name'          => 'required|string|max:255',
+            'code'          => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('categories')->where('department_id', $deptId),
+            ],
+            'description'   => 'nullable|string',
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
+        $validated['department_id'] = $deptId;
+
         $category = Category::create($validated);
-        $category->load('parent');
 
         return $this->created($category);
     }
 
     public function show(Category $category): JsonResponse
     {
-        $category->load(['parent', 'children', 'items.unit']);
+        $category->load('items.unit');
         $category->loadCount('items');
 
         return $this->success($category);
@@ -47,20 +59,18 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category): JsonResponse
     {
+        $deptId = $category->department_id;
+
         $validated = $request->validate([
             'name'        => 'sometimes|string|max:255',
-            'code'        => 'nullable|string|max:20|unique:categories,code,' . $category->id,
+            'code'        => [
+                'nullable', 'string', 'max:20',
+                Rule::unique('categories')->where('department_id', $deptId)->ignore($category->id),
+            ],
             'description' => 'nullable|string',
-            'parent_id'   => 'nullable|exists:categories,id',
         ]);
 
-        // Prevent self-referencing or circular parent
-        if (isset($validated['parent_id']) && $validated['parent_id'] == $category->id) {
-            return $this->error('A category cannot be its own parent.', 422);
-        }
-
         $category->update($validated);
-        $category->load('parent');
 
         return $this->success($category, 'Category updated successfully');
     }
@@ -69,10 +79,6 @@ class CategoryController extends Controller
     {
         if ($category->items()->exists()) {
             return $this->error('Cannot delete category that has items.', 422);
-        }
-
-        if ($category->children()->exists()) {
-            return $this->error('Cannot delete category that has sub-categories.', 422);
         }
 
         $category->delete();

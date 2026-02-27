@@ -28,7 +28,6 @@ class EmployeeController extends Controller
             $query->where(function ($q) use ($request) {
                 $q->where('first_name', 'like', "%{$request->search}%")
                   ->orWhere('last_name', 'like', "%{$request->search}%")
-                  ->orWhere('employee_id', 'like', "%{$request->search}%")
                   ->orWhere('position', 'like', "%{$request->search}%");
             });
         }
@@ -39,12 +38,10 @@ class EmployeeController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'employee_id'   => 'required|string|max:50|unique:employees,employee_id',
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'department_id' => 'required|exists:departments,id',
             'position'      => 'nullable|string|max:255',
-            'email'         => 'nullable|email|max:255',
             'phone'         => 'nullable|string|max:50',
             'status'        => 'nullable|in:active,inactive',
         ]);
@@ -69,12 +66,10 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee): JsonResponse
     {
         $validated = $request->validate([
-            'employee_id'   => 'sometimes|string|max:50|unique:employees,employee_id,' . $employee->id,
             'first_name'    => 'sometimes|string|max:255',
             'last_name'     => 'sometimes|string|max:255',
             'department_id' => 'sometimes|exists:departments,id',
             'position'      => 'nullable|string|max:255',
-            'email'         => 'nullable|email|max:255',
             'phone'         => 'nullable|string|max:50',
             'status'        => 'nullable|in:active,inactive',
         ]);
