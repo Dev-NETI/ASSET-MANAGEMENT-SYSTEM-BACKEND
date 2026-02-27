@@ -10,6 +10,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class StockReceivalController extends Controller
 {
@@ -59,14 +60,15 @@ class StockReceivalController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'item_id'       => 'required|exists:items,id',
-            'department_id' => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
-            'quantity'      => 'required|numeric|min:0.01',
-            'unit_cost'     => 'nullable|numeric|min:0',
-            'supplier_id'   => 'nullable|exists:suppliers,id',
-            'reference_no'  => 'nullable|string|max:100',
-            'received_at'   => 'nullable|date',
-            'notes'         => 'nullable|string',
+            'item_id'              => 'required|exists:items,id',
+            'department_id'        => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
+            'quantity'             => 'required|numeric|min:0.01',
+            'unit_cost'            => 'nullable|numeric|min:0',
+            'supplier_id'          => 'nullable|exists:suppliers,id',
+            'delivery_receipt_no'  => 'nullable|string|max:100',
+            'delivery_receipt_file'=> 'nullable|file|mimes:pdf|max:5120',
+            'received_at'          => 'nullable|date',
+            'notes'                => 'nullable|string',
         ]);
 
         if (! $user->isSystemAdmin()) {
@@ -78,7 +80,14 @@ class StockReceivalController extends Controller
             return $this->error('Fixed assets are registered individually via item-assets, not as stock receivals.', 422);
         }
 
-        $receival = DB::transaction(function () use ($validated, $request) {
+        // Handle file upload outside the transaction
+        $filePath = null;
+        if ($request->hasFile('delivery_receipt_file')) {
+            $filePath = $request->file('delivery_receipt_file')
+                ->store('delivery_receipt', 'public');
+        }
+
+        $receival = DB::transaction(function () use ($validated, $request, $filePath) {
             // Upsert inventory stock
             $stock = InventoryStock::firstOrCreate(
                 ['item_id' => $validated['item_id'], 'department_id' => $validated['department_id']],
@@ -87,15 +96,16 @@ class StockReceivalController extends Controller
             $stock->increment('quantity', $validated['quantity']);
 
             return StockReceival::create([
-                'item_id'       => $validated['item_id'],
-                'department_id' => $validated['department_id'],
-                'quantity'      => $validated['quantity'],
-                'unit_cost'     => $validated['unit_cost'] ?? null,
-                'supplier_id'   => $validated['supplier_id'] ?? null,
-                'reference_no'  => $validated['reference_no'] ?? null,
-                'received_by'   => $request->user()->id,
-                'received_at'   => $validated['received_at'] ?? now(),
-                'notes'         => $validated['notes'] ?? null,
+                'item_id'               => $validated['item_id'],
+                'department_id'         => $validated['department_id'],
+                'quantity'              => $validated['quantity'],
+                'unit_cost'             => $validated['unit_cost'] ?? null,
+                'supplier_id'           => $validated['supplier_id'] ?? null,
+                'delivery_receipt_no'   => $validated['delivery_receipt_no'] ?? null,
+                'delivery_receipt_file' => $filePath,
+                'received_by'           => $request->user()->id,
+                'received_at'           => $validated['received_at'] ?? now(),
+                'notes'                 => $validated['notes'] ?? null,
             ]);
         });
 

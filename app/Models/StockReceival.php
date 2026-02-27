@@ -2,18 +2,21 @@
 
 namespace App\Models;
 
+use App\Traits\HasModifiedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StockReceival extends Model
 {
+    use HasModifiedBy;
     protected $fillable = [
         'item_id',
         'department_id',
         'quantity',
         'unit_cost',
         'supplier_id',
-        'reference_no',
+        'delivery_receipt_no',
+        'delivery_receipt_file',
         'received_by',
         'received_at',
         'notes',
