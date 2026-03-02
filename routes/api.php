@@ -23,6 +23,9 @@ Route::post('/login',               [AuthController::class, 'login']);
 Route::post('/verify-code',         [AuthController::class, 'verifyCode']);
 Route::post('/resend-verification', [AuthController::class, 'resendCode']);
 
+// Public asset detail lookup (used by QR code scan page — no auth required)
+Route::get('/item-assets/code/{code}', [ItemAssetController::class, 'showByCode']);
+
 // ── Protected routes (Sanctum token required) ────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -48,8 +51,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Fixed-asset management ────────────────────────────────────────────────
     // Custom actions MUST be declared before apiResource to avoid {itemAsset} swallowing them
-    Route::post('item-assets/{itemAsset}/assign', [ItemAssetController::class, 'assign']);
-    Route::post('item-assets/{itemAsset}/return', [ItemAssetController::class, 'returnAsset']);
+    Route::post('item-assets/{itemAsset}/assign',    [ItemAssetController::class, 'assign']);
+    Route::post('item-assets/{itemAsset}/return',    [ItemAssetController::class, 'returnAsset']);
+    Route::post('item-assets/{itemAsset}/upload-dr', [ItemAssetController::class, 'uploadDeliveryReceipt']);
     Route::apiResource('item-assets', ItemAssetController::class);
 
     // Asset assignment history (read + update notes/status + delete closed records)
