@@ -90,7 +90,7 @@ class ItemAssetController extends Controller
     public function showByCode(string $code): JsonResponse
     {
         $asset = ItemAsset::with([
-            'item',
+            'item.category',
             'department',
             'activeAssignment.assignable',
         ])->where('item_code', $code)->first();
@@ -182,8 +182,9 @@ class ItemAssetController extends Controller
         }
 
         $validated = $request->validate([
-            'assignable_type'      => 'required|in:employee,department',
-            'assignable_id'        => 'required|integer',
+            'assignable_type'      => 'required|in:employee,department,others',
+            'assignable_id'        => 'required_unless:assignable_type,others|nullable|integer',
+            'assignable_label'     => 'required_if:assignable_type,others|nullable|string|max:500',
             'assigned_at'          => 'nullable|date',
             'expected_return_date' => 'nullable|date',
             'condition_on_assign'  => 'nullable|in:new,good,fair,poor',
@@ -191,22 +192,26 @@ class ItemAssetController extends Controller
             'notes'                => 'nullable|string',
         ]);
 
-        // Resolve the polymorphic model
+        // Resolve the polymorphic model (skip for 'others')
         $modelMap = [
             'employee'   => \App\Models\Employee::class,
             'department' => \App\Models\Department::class,
         ];
-        $modelClass = $modelMap[$validated['assignable_type']];
 
-        if (! $modelClass::find($validated['assignable_id'])) {
-            return $this->error(ucfirst($validated['assignable_type']) . ' not found.', 422);
+        $modelClass = null;
+        if ($validated['assignable_type'] !== 'others') {
+            $modelClass = $modelMap[$validated['assignable_type']];
+            if (! $modelClass::find($validated['assignable_id'])) {
+                return $this->error(ucfirst($validated['assignable_type']) . ' not found.', 422);
+            }
         }
 
         DB::transaction(function () use ($itemAsset, $validated, $modelClass, $request) {
             AssetAssignment::create([
                 'asset_id'             => $itemAsset->id,
                 'assignable_type'      => $modelClass,
-                'assignable_id'        => $validated['assignable_id'],
+                'assignable_id'        => $validated['assignable_id'] ?? null,
+                'assignable_label'     => $validated['assignable_label'] ?? null,
                 'assigned_by'          => $request->user()->id,
                 'assigned_at'          => $validated['assigned_at'] ?? now(),
                 'expected_return_date' => $validated['expected_return_date'] ?? null,

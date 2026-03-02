@@ -24,6 +24,7 @@ class AssetAssignment extends Model
         'purpose',
         'status',
         'notes',
+        'assignable_label',
     ];
 
     protected $casts = [
