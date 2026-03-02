@@ -69,9 +69,10 @@ class ItemController extends Controller
             'department_id'   => 'nullable|exists:departments,id',
         ]);
 
-        $validated['department_id'] = $user->isSystemAdmin()
+        $validated['department_id']   = $user->isSystemAdmin()
             ? ($validated['department_id'] ?? null)
             : $user->department_id;
+        $validated['min_stock_level'] = $validated['min_stock_level'] ?? 0;
 
         $item = Item::create($validated);
         $item->load(['category', 'unit']);
@@ -106,6 +107,9 @@ class ItemController extends Controller
         ]);
 
         // item_type cannot be changed once created to protect data integrity
+        if (array_key_exists('min_stock_level', $validated)) {
+            $validated['min_stock_level'] = $validated['min_stock_level'] ?? 0;
+        }
         $item->update($validated);
         $item->load(['category', 'unit']);
 

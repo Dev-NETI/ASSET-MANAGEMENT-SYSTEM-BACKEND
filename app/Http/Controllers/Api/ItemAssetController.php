@@ -9,6 +9,7 @@ use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ItemAssetController extends Controller
 {
@@ -40,7 +41,7 @@ class ItemAssetController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('item_code', 'like', "%{$request->search}%")
-                  ->orWhere('serial_number', 'like', "%{$request->search}%");
+                    ->orWhere('serial_number', 'like', "%{$request->search}%");
             });
         }
 
@@ -60,8 +61,9 @@ class ItemAssetController extends Controller
             'warranty_expiry' => 'nullable|date|after_or_equal:purchase_date',
             'condition'       => 'nullable|in:new,good,fair,poor,damaged,lost,disposed',
             'department_id'   => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
-            'status'          => 'nullable|in:available,assigned,under_repair,disposed',
-            'notes'           => 'nullable|string',
+            'status'               => 'nullable|in:available,assigned,under_repair,disposed',
+            'notes'                => 'nullable|string',
+            'delivery_receipt_no'  => 'nullable|string|max:255',
         ]);
 
         // Employee users are scoped to their own department
@@ -81,6 +83,25 @@ class ItemAssetController extends Controller
         return $this->created($asset);
     }
 
+    /**
+     * Public lookup by item_code — no auth required.
+     * GET /api/item-assets/code/{code}
+     */
+    public function showByCode(string $code): JsonResponse
+    {
+        $asset = ItemAsset::with([
+            'item',
+            'department',
+            'activeAssignment.assignable',
+        ])->where('item_code', $code)->first();
+
+        if (! $asset) {
+            return $this->error('Asset not found.', 404);
+        }
+
+        return $this->success($asset);
+    }
+
     public function show(ItemAsset $itemAsset): JsonResponse
     {
         $itemAsset->load([
@@ -88,7 +109,7 @@ class ItemAssetController extends Controller
             'item.unit',
             'department',
             'activeAssignment.assignable',
-            'assignments' => fn ($q) => $q->with(['assignable', 'assignedBy', 'returnedBy'])->latest('assigned_at'),
+            'assignments' => fn($q) => $q->with(['assignable', 'assignedBy', 'returnedBy'])->latest('assigned_at'),
         ]);
 
         return $this->success($itemAsset);
@@ -101,16 +122,38 @@ class ItemAssetController extends Controller
             'purchase_date'   => 'nullable|date',
             'purchase_price'  => 'nullable|numeric|min:0',
             'warranty_expiry' => 'nullable|date',
-            'condition'       => 'nullable|in:new,good,fair,poor,damaged,lost,disposed',
-            'department_id'   => 'sometimes|exists:departments,id',
-            'status'          => 'nullable|in:available,assigned,under_repair,disposed',
-            'notes'           => 'nullable|string',
+            'condition'            => 'nullable|in:new,good,fair,poor,damaged,lost,disposed',
+            'department_id'        => 'sometimes|exists:departments,id',
+            'status'               => 'nullable|in:available,assigned,under_repair,disposed',
+            'notes'                => 'nullable|string',
+            'delivery_receipt_no'  => 'nullable|string|max:255',
         ]);
 
         $itemAsset->update($validated);
         $itemAsset->load(['item.category', 'department', 'activeAssignment.assignable']);
 
         return $this->success($itemAsset, 'Asset updated successfully');
+    }
+
+    /**
+     * Upload or replace the delivery receipt file.
+     * POST /api/item-assets/{itemAsset}/upload-dr
+     */
+    public function uploadDeliveryReceipt(Request $request, ItemAsset $itemAsset): JsonResponse
+    {
+        $request->validate([
+            'delivery_receipt_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        ]);
+
+        // Delete old file if one exists
+        if ($itemAsset->delivery_receipt_file) {
+            Storage::disk('public')->delete($itemAsset->delivery_receipt_file);
+        }
+
+        $path = $request->file('delivery_receipt_file')->store('delivery_receipts', 'public');
+        $itemAsset->update(['delivery_receipt_file' => $path]);
+
+        return $this->success($itemAsset, 'Delivery receipt uploaded.');
     }
 
     public function destroy(ItemAsset $itemAsset): JsonResponse
@@ -219,7 +262,7 @@ class ItemAssetController extends Controller
             ]);
         });
 
-        $itemAsset->load(['item', 'department', 'assignments' => fn ($q) => $q->latest()->first()]);
+        $itemAsset->load(['item', 'department', 'assignments' => fn($q) => $q->latest()->first()]);
 
         return $this->success($itemAsset, 'Asset returned successfully');
     }

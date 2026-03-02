@@ -22,6 +22,8 @@ class ItemAsset extends Model
         'department_id',
         'status',
         'notes',
+        'delivery_receipt_no',
+        'delivery_receipt_file',
     ];
 
     protected $casts = [
