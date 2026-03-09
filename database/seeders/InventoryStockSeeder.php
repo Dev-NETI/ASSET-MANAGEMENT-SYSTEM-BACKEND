@@ -15,9 +15,9 @@ class InventoryStockSeeder extends Seeder
     public function run(): void
     {
         $admin = User::first();
-        $dept  = fn (string $code) => Department::where('code', $code)->first()?->id;
-        $item  = fn (string $name) => Item::where('name', $name)->first()?->id;
-        $supp  = fn (string $name) => Supplier::where('name', 'like', "%{$name}%")->first()?->id;
+        $dept  = fn(string $code) => Department::where('code', $code)->first()?->id;
+        $item  = fn(string $name) => Item::where('name', $name)->first()?->id;
+        $supp  = fn(string $name) => Supplier::where('name', 'like', "%{$name}%")->first()?->id;
 
         $stocks = [
             // ── BOD: Clothing ─────────────────────────────────────────────
@@ -71,7 +71,6 @@ class InventoryStockSeeder extends Seeder
                 'quantity'      => $s['qty'],
                 'unit_cost'     => $s['unit_cost'],
                 'supplier_id'   => $supp($s['supplier']),
-                'reference_no'  => 'INIT-' . strtoupper($s['dept']) . '-001',
                 'received_by'   => $admin->id,
                 'received_at'   => now()->subDays(rand(7, 60)),
                 'notes'         => 'Initial stock load',
