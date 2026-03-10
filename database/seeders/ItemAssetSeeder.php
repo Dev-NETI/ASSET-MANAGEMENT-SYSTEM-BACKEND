@@ -27,7 +27,7 @@ class ItemAssetSeeder extends Seeder
             ['item_code' => 'NOD-LAP-004', 'item' => 'Laptop Computer', 'serial' => 'DL-INS-SN00104', 'dept' => 'NOD', 'purchase_date' => '2024-03-20', 'purchase_price' => 57500.00, 'condition' => 'good',  'status' => 'assigned', 'assignee' => 'EMP-003'],
             // ── Desktops (NOD) ────────────────────────────────────────────
             ['item_code' => 'NOD-DES-001', 'item' => 'Desktop Computer', 'serial' => 'DL-OPX-SN00201', 'dept' => 'NOD', 'purchase_date' => '2023-06-10', 'purchase_price' => 45000.00, 'condition' => 'good',  'status' => 'available', 'assignee' => null],
-            ['item_code' => 'NOD-DES-002', 'item' => 'Desktop Computer', 'serial' => 'DL-OPX-SN00202', 'dept' => 'NOD', 'purchase_date' => '2023-06-10', 'purchase_price' => 45000.00, 'condition' => 'fair',  'status' => 'under_repair', 'assignee' => null],
+            ['item_code' => 'NOD-DES-002', 'item' => 'Desktop Computer', 'serial' => 'DL-OPX-SN00202', 'dept' => 'NOD', 'purchase_date' => '2023-06-10', 'purchase_price' => 45000.00, 'condition' => 'fair',  'status' => 'available', 'assignee' => null],
             // ── Tablets (NOD) ─────────────────────────────────────────────
             ['item_code' => 'NOD-TAB-001', 'item' => 'Tablet', 'serial' => 'AP-IPD-SN00301', 'dept' => 'NOD', 'purchase_date' => '2024-02-05', 'purchase_price' => 70000.00, 'condition' => 'good',  'status' => 'available', 'assignee' => null],
             // ── Network Switch (NOD) ──────────────────────────────────────
@@ -53,7 +53,7 @@ class ItemAssetSeeder extends Seeder
             ['item_code' => 'FIN-LAP-001',  'item' => 'Laptop Computer', 'serial' => 'DL-INS-SN01001', 'dept' => 'FIN',  'purchase_date' => '2024-03-01', 'purchase_price' => 55000.00, 'condition' => 'new',   'status' => 'assigned', 'assignee' => 'EMP-015'],
             // ── AC Units (DOD) ────────────────────────────────────────────
             ['item_code' => 'DOD-ACU-001', 'item' => 'Air Conditioning Unit', 'serial' => 'CAR-1HP-SN01101', 'dept' => 'DOD', 'purchase_date' => '2023-05-01', 'purchase_price' => 28000.00, 'condition' => 'good',  'status' => 'available', 'assignee' => null],
-            ['item_code' => 'DOD-ACU-002', 'item' => 'Air Conditioning Unit', 'serial' => 'CAR-1HP-SN01102', 'dept' => 'DOD', 'purchase_date' => '2023-05-01', 'purchase_price' => 28000.00, 'condition' => 'fair',  'status' => 'under_repair', 'assignee' => null],
+            ['item_code' => 'DOD-ACU-002', 'item' => 'Air Conditioning Unit', 'serial' => 'CAR-1HP-SN01102', 'dept' => 'DOD', 'purchase_date' => '2023-05-01', 'purchase_price' => 28000.00, 'condition' => 'fair',  'status' => 'available', 'assignee' => null],
             ['item_code' => 'DOD-ACU-003', 'item' => 'Air Conditioning Unit', 'serial' => 'CAR-1HP-SN01103', 'dept' => 'DOD', 'purchase_date' => '2024-01-10', 'purchase_price' => 30000.00, 'condition' => 'new',   'status' => 'available', 'assignee' => null],
         ];
 

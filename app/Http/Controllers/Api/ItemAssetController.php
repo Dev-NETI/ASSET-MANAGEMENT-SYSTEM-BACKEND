@@ -30,10 +30,6 @@ class ItemAssetController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('condition')) {
-            $query->where('condition', $request->condition);
-        }
-
         if ($request->filled('item_id')) {
             $query->where('item_id', $request->item_id);
         }
@@ -61,9 +57,8 @@ class ItemAssetController extends Controller
             'purchase_date'   => 'nullable|date',
             'purchase_price'  => 'nullable|numeric|min:0',
             'warranty_expiry' => 'nullable|date|after_or_equal:purchase_date',
-            'condition'       => 'nullable|in:new,good,fair,poor,damaged,lost,disposed',
             'department_id'   => $user->isSystemAdmin() ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
-            'status'               => 'nullable|in:available,assigned,under_repair,disposed',
+            'status'               => 'nullable|in:available,assigned',
             'notes'                => 'nullable|string',
             'delivery_receipt_no'  => 'nullable|string|max:255',
         ]);
@@ -125,9 +120,8 @@ class ItemAssetController extends Controller
             'purchase_date'   => 'nullable|date',
             'purchase_price'  => 'nullable|numeric|min:0',
             'warranty_expiry' => 'nullable|date',
-            'condition'            => 'nullable|in:new,good,fair,poor,damaged,lost,disposed',
             'department_id'        => 'sometimes|exists:departments,id',
-            'status'               => 'nullable|in:available,assigned,under_repair,disposed',
+            'status'               => 'nullable|in:available,assigned',
             'notes'                => 'nullable|string',
             'delivery_receipt_no'  => 'nullable|string|max:255',
         ]);
@@ -180,17 +174,12 @@ class ItemAssetController extends Controller
             return $this->error('Asset is already assigned. Return it first.', 422);
         }
 
-        if (in_array($itemAsset->status, ['disposed', 'under_repair'])) {
-            return $this->error("Asset cannot be assigned while its status is '{$itemAsset->status}'.", 422);
-        }
-
         $validated = $request->validate([
             'assignable_type'      => 'required|in:employee,department,others',
             'assignable_id'        => 'required_unless:assignable_type,others|nullable|integer',
             'assignable_label'     => 'required_if:assignable_type,others|nullable|string|max:500',
             'assigned_at'          => 'nullable|date',
             'expected_return_date' => 'nullable|date',
-            'condition_on_assign'  => 'nullable|in:new,good,fair,poor',
             'purpose'              => 'nullable|string|max:500',
             'notes'                => 'nullable|string',
         ]);
@@ -218,7 +207,6 @@ class ItemAssetController extends Controller
                 'assigned_by'          => $request->user()->id,
                 'assigned_at'          => $validated['assigned_at'] ?? now(),
                 'expected_return_date' => $validated['expected_return_date'] ?? null,
-                'condition_on_assign'  => $validated['condition_on_assign'] ?? 'good',
                 'purpose'              => $validated['purpose'] ?? null,
                 'notes'                => $validated['notes'] ?? null,
                 'status'               => 'active',
@@ -245,29 +233,18 @@ class ItemAssetController extends Controller
         }
 
         $validated = $request->validate([
-            'condition_on_return' => 'nullable|in:new,good,fair,poor,damaged,lost',
-            'notes'               => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($assignment, $itemAsset, $validated, $request) {
-            $returnCondition = $validated['condition_on_return'] ?? 'good';
-
             $assignment->update([
-                'returned_at'          => now(),
-                'returned_by'          => $request->user()->id,
-                'condition_on_return'  => $returnCondition,
-                'notes'                => $validated['notes'] ?? $assignment->notes,
-                'status'               => 'returned',
+                'returned_at' => now(),
+                'returned_by' => $request->user()->id,
+                'notes'       => $validated['notes'] ?? $assignment->notes,
+                'status'      => 'returned',
             ]);
 
-            $newCondition = in_array($returnCondition, ['damaged', 'lost'])
-                ? $returnCondition
-                : $returnCondition;
-
-            $itemAsset->update([
-                'status'    => 'available',
-                'condition' => $newCondition,
-            ]);
+            $itemAsset->update(['status' => 'available']);
         });
 
         $itemAsset->load(['item', 'department', 'assignments' => fn($q) => $q->latest()->first()]);

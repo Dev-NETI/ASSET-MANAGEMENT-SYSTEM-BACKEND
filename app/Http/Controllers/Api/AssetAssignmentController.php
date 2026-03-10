@@ -20,7 +20,7 @@ class AssetAssignmentController extends Controller
     {
         $user  = $request->user();
         $query = AssetAssignment::with([
-            'asset.item',
+            'asset.item.category',
             'asset.department',
             'assignable',
             'assignedBy',
@@ -78,7 +78,7 @@ class AssetAssignmentController extends Controller
             'expected_return_date' => 'nullable|date',
             'purpose'              => 'nullable|string|max:500',
             'notes'                => 'nullable|string',
-            'status'               => 'nullable|in:active,returned,lost',
+            'status'               => 'nullable|in:active,returned',
         ]);
 
         $assetAssignment->update($validated);

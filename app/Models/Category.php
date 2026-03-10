@@ -12,7 +12,6 @@ class Category extends Model
     use HasModifiedBy;
     protected $fillable = [
         'name',
-        'code',
         'description',
         'department_id',
     ];

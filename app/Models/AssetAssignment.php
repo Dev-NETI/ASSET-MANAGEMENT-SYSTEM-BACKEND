@@ -19,8 +19,6 @@ class AssetAssignment extends Model
         'expected_return_date',
         'returned_at',
         'returned_by',
-        'condition_on_assign',
-        'condition_on_return',
         'purpose',
         'status',
         'notes',
