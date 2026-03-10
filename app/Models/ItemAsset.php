@@ -15,6 +15,7 @@ class ItemAsset extends Model
         'item_id',
         'item_code',
         'serial_number',
+        'mac_address',
         'purchase_date',
         'purchase_price',
         'warranty_expiry',
