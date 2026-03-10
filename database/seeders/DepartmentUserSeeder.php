@@ -27,7 +27,7 @@ class DepartmentUserSeeder extends Seeder
         $users = [
             [
                 'name'          => 'NOD Administrator',
-                'email'         => 'nod@neti.com.ph',
+                'email'         => 'noc@neti.com.ph',
                 'password'      => Hash::make('password'),
                 'user_type'     => 'employee',
                 'department_id' => $dept('NOD'),

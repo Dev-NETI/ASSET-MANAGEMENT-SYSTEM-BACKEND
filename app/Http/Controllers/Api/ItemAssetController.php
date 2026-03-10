@@ -41,7 +41,8 @@ class ItemAssetController extends Controller
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('item_code', 'like', "%{$request->search}%")
-                    ->orWhere('serial_number', 'like', "%{$request->search}%");
+                    ->orWhere('serial_number', 'like', "%{$request->search}%")
+                    ->orWhere('mac_address', 'like', "%{$request->search}%");
             });
         }
 
@@ -56,6 +57,7 @@ class ItemAssetController extends Controller
             'item_id'         => 'required|exists:items,id',
             'item_code'       => 'required|string|max:100|unique:item_assets,item_code',
             'serial_number'   => 'nullable|string|max:255',
+            'mac_address'     => ['nullable', 'string', 'max:17', 'regex:/^([0-9A-Fa-f]{2}[:\-]){5}([0-9A-Fa-f]{2})$/'],
             'purchase_date'   => 'nullable|date',
             'purchase_price'  => 'nullable|numeric|min:0',
             'warranty_expiry' => 'nullable|date|after_or_equal:purchase_date',
@@ -119,6 +121,7 @@ class ItemAssetController extends Controller
     {
         $validated = $request->validate([
             'serial_number'   => 'nullable|string|max:255',
+            'mac_address'     => ['nullable', 'string', 'max:17', 'regex:/^([0-9A-Fa-f]{2}[:\-]){5}([0-9A-Fa-f]{2})$/'],
             'purchase_date'   => 'nullable|date',
             'purchase_price'  => 'nullable|numeric|min:0',
             'warranty_expiry' => 'nullable|date',
