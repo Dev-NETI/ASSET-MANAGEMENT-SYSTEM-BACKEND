@@ -19,7 +19,6 @@ class ItemAsset extends Model
         'purchase_date',
         'purchase_price',
         'warranty_expiry',
-        'condition',
         'department_id',
         'status',
         'notes',

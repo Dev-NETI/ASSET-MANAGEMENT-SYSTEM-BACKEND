@@ -7,8 +7,6 @@ use App\Models\Category;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-
 class CategoryController extends Controller
 {
     use ApiResponse;
@@ -34,10 +32,6 @@ class CategoryController extends Controller
 
         $validated = $request->validate([
             'name'          => 'required|string|max:255',
-            'code'          => [
-                'nullable', 'string', 'max:20',
-                Rule::unique('categories')->where('department_id', $deptId),
-            ],
             'description'   => 'nullable|string',
             'department_id' => 'nullable|exists:departments,id',
         ]);
@@ -59,14 +53,8 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category): JsonResponse
     {
-        $deptId = $category->department_id;
-
         $validated = $request->validate([
             'name'        => 'sometimes|string|max:255',
-            'code'        => [
-                'nullable', 'string', 'max:20',
-                Rule::unique('categories')->where('department_id', $deptId)->ignore($category->id),
-            ],
             'description' => 'nullable|string',
         ]);
 
